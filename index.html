@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ironwood Infrastructure Inc.</title>
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Load React and ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Load Babel to compile JSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Smooth scrolling for the whole page */
+        html { scroll-behavior: smooth; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="bg-zinc-50 font-sans text-zinc-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- CUSTOM SVG ICONS (Replaces Lucide to work in single-file HTML) ---
+        const Icon = ({ path, size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {path}
+            </svg>
+        );
+        const Menu = (p) => <Icon {...p} path={<><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></>} />
+        const X = (p) => <Icon {...p} path={<><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></>} />
+        const ChevronRight = (p) => <Icon {...p} path={<polyline points="9 18 15 12 9 6"></polyline>} />
+        const ArrowRight = (p) => <Icon {...p} path={<><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></>} />
+        const Train = (p) => <Icon {...p} path={<><rect x="4" y="3" width="16" height="16" rx="2" ry="2"></rect><path d="M4 11h16"></path><path d="M12 3v8"></path><path d="M8 19l-2 3"></path><path d="M16 19l2 3"></path><path d="M8 15h.01"></path><path d="M16 15h.01"></path></>} />
+        const ShieldCheck = (p) => <Icon {...p} path={<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></>} />
+        const HardHat = (p) => <Icon {...p} path={<><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z"></path><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"></path><path d="M4 15v-3a8 8 0 0 1 16 0v3"></path></>} />
+        const BookOpen = (p) => <Icon {...p} path={<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></>} />
+        const Youtube = (p) => <Icon {...p} path={<><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></>} />
+        const Mail = (p) => <Icon {...p} path={<><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></>} />
+        const Phone = (p) => <Icon {...p} path={<><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></>} />
+        const MapPin = (p) => <Icon {...p} path={<><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></>} />
+        const AlertTriangle = (p) => <Icon {...p} path={<><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></>} />
+        const FileCheck = (p) => <Icon {...p} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><polyline points="9 15 11 17 15 13"></polyline></>} />
+        const Users = (p) => <Icon {...p} path={<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></>} />
+        const TrendingUp = (p) => <Icon {...p} path={<><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></>} />
+        // ---------------------------------------------------------------------
+
+        const Logo = () => (
+          <div className="flex items-center">
+            <img 
+              src="image_c71aa0.png" 
+              alt="Ironwood Infrastructure Logo" 
+              className="h-16 md:h-20 w-auto object-contain mix-blend-multiply md:pr-4" 
+              onError={(e) => {
+                e.target.style.display = 'none';
+                if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
+              }}
+            />
+            <span className="hidden font-extrabold text-2xl tracking-tighter text-zinc-900">
+              IRONWOOD <span className="text-red-600 font-medium text-lg">INFRASTRUCTURE</span>
+            </span>
+          </div>
+        );
+
+        function App() {
+          const [currentPage, setCurrentPage] = useState('home');
+          const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+          const [activeArticle, setActiveArticle] = useState(null);
+          const [serviceTab, setServiceTab] = useState('grade-crossings');
+
+          const navigate = (page) => {
+            setCurrentPage(page);
+            setActiveArticle(null);
+            setIsMobileMenuOpen(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          };
+
+          const navLinks = [
+            { id: 'home', label: 'Home' },
+            { id: 'about', label: 'About Us' },
+            { id: 'services', label: 'Services' },
+            { id: 'insights', label: 'Insights' },
+            { id: 'media', label: 'Media' },
+            { id: 'contact', label: 'Contact' },
+          ];
+
+          const renderContent = () => {
+            switch (currentPage) {
+              case 'home': return <Home navigate={navigate} setServiceTab={setServiceTab} />;
+              case 'about': return <About />;
+              case 'services': return <Services activeTab={serviceTab} setTab={setServiceTab} />;
+              case 'insights': return <Insights activeArticle={activeArticle} setActiveArticle={setActiveArticle} />;
+              case 'media': return <Media />;
+              case 'contact': return <Contact />;
+              default: return <Home navigate={navigate} setServiceTab={setServiceTab} />;
+            }
+          };
+
+          return (
+            <div className="min-h-screen flex flex-col">
+              {/* Navigation */}
+              <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm border-b border-zinc-100">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex justify-between items-center h-24 py-2 gap-8">
+                    <div className="flex-shrink-0 cursor-pointer" onClick={() => navigate('home')}>
+                      <Logo />
+                    </div>
+                    
+                    {/* Desktop Menu */}
+                    <div className="hidden md:flex space-x-8 items-center ml-auto">
+                      {navLinks.map((link) => (
+                        <button
+                          key={link.id}
+                          onClick={() => navigate(link.id)}
+                          className={`text-sm font-semibold transition-colors duration-200 ${
+                            currentPage === link.id ? 'text-red-600' : 'text-zinc-600 hover:text-red-500'
+                          }`}
+                        >
+                          {link.label}
+                        </button>
+                      ))}
+                      <button 
+                        onClick={() => navigate('contact')}
+                        className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-full font-semibold transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                      >
+                        Get in Touch
+                      </button>
+                    </div>
+
+                    {/* Mobile Menu Button */}
+                    <div className="md:hidden flex items-center">
+                      <button
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        className="text-zinc-600 hover:text-red-600 focus:outline-none"
+                      >
+                        {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile Menu Panel */}
+                {isMobileMenuOpen && (
+                  <div className="md:hidden bg-white border-t border-zinc-100 absolute w-full shadow-lg">
+                    <div className="px-4 pt-2 pb-6 space-y-2">
+                      {navLinks.map((link) => (
+                        <button
+                          key={link.id}
+                          onClick={() => navigate(link.id)}
+                          className={`block w-full text-left px-3 py-3 rounded-md text-base font-medium ${
+                            currentPage === link.id ? 'bg-red-50 text-red-600' : 'text-zinc-700 hover:bg-zinc-50'
+                          }`}
+                        >
+                          {link.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </nav>
+
+              {/* Main Content Area */}
+              <main className="flex-grow">
+                {renderContent()}
+              </main>
+
+              {/* Footer */}
+              <footer className="bg-black text-zinc-300 py-12 border-t border-zinc-900">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+                  <div className="col-span-1 md:col-span-2">
+                    <div className="mb-6 bg-white inline-block p-4 rounded-xl">
+                       <img 
+                         src="image_c71aa0.png" 
+                         alt="Ironwood Infrastructure Logo" 
+                         className="h-12 w-auto object-contain"
+                         onError={(e) => {
+                           e.target.style.display = 'none';
+                           if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
+                         }}
+                       />
+                       <span className="hidden font-extrabold text-xl tracking-tighter text-zinc-900">
+                         IRONWOOD <span className="text-red-600 font-medium text-sm">INFRASTRUCTURE</span>
+                       </span>
+                    </div>
+                    <p className="text-zinc-400 max-w-sm mb-6 leading-relaxed">
+                      Engineering Railway Solutions. Delivering safe, compliant, and client-focused project solutions across Canada.
+                    </p>
+                    <div className="flex space-x-4">
+                      <a href="https://www.youtube.com/@IronwoodInfrastructure" target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-red-600 transition-colors">
+                        <Youtube size={24} />
+                      </a>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-semibold mb-4 tracking-wider uppercase text-sm">Quick Links</h4>
+                    <ul className="space-y-2">
+                      {['Home', 'About', 'Services', 'Insights', 'Contact'].map((item) => (
+                        <li key={item}>
+                          <button onClick={() => navigate(item.toLowerCase())} className="hover:text-red-500 transition-colors">
+                            {item}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-semibold mb-4 tracking-wider uppercase text-sm">Services</h4>
+                    <ul className="space-y-2">
+                      <li><button onClick={() => { navigate('services'); setServiceTab('grade-crossings'); }} className="hover:text-red-500 transition-colors">Grade Crossings</button></li>
+                      <li><button onClick={() => { navigate('services'); setServiceTab('project-support'); }} className="hover:text-red-500 transition-colors">Project Support</button></li>
+                      <li><button onClick={() => { navigate('services'); setServiceTab('training'); }} className="hover:text-red-500 transition-colors">Training</button></li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-zinc-800 text-center text-sm text-zinc-500">
+                  Copyright © 2026 Ironwood Infrastructure Inc. - All Rights Reserved.
+                </div>
+              </footer>
+            </div>
+          );
+        }
+
+        /* ================= PAGE COMPONENTS ================= */
+
+        function Home({ navigate, setServiceTab }) {
+          const navigateToService = (tab) => {
+            setServiceTab(tab);
+            navigate('services');
+          };
+
+          return (
+            <div className="fade-in">
+              {/* Hero Section with Red/Black Gradient */}
+              <section className="relative overflow-hidden bg-gradient-to-br from-black via-zinc-900 to-red-950 text-white py-32 lg:py-48">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-b from-transparent to-black/50 pointer-events-none"></div>
+                
+                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 text-center lg:text-left flex flex-col lg:flex-row items-center gap-12">
+                  <div className="lg:w-2/3">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                      <span className="text-sm font-medium tracking-wide uppercase">Engineering Railway Solutions</span>
+                    </div>
+                    <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
+                      Unlock the <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-white">Potential of Engineering</span>
+                    </h1>
+                    <p className="text-xl text-zinc-300 mb-10 max-w-3xl leading-relaxed">
+                      At Ironwood Infrastructure Inc., we specialize in multi-stakeholder railway infrastructure, safety, risk and project management solutions. Our expertise spans railway engineering, regulatory compliance, grade crossings, bridges, and complex joint infrastructure projects regulated by the CTA.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                      <button onClick={() => navigate('about')} className="px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-full font-bold text-lg transition-all shadow-lg hover:shadow-red-600/50 flex items-center justify-center gap-2 group">
+                        Explore Our Vision <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
+                      </button>
+                      <button onClick={() => navigate('contact')} className="px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-full font-bold text-lg transition-all flex items-center justify-center">
+                        Contact Our Team
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Quick Links / Services Cards */}
+              <section className="py-24 bg-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="text-center mb-16">
+                    <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-4">Our Core Solutions</h2>
+                    <p className="text-lg text-zinc-600 max-w-2xl mx-auto">Committed to delivering high-quality, customized solutions that will meet and exceed your expectations.</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {/* Card 1 */}
+                    <div className="bg-zinc-50 rounded-2xl p-8 border border-zinc-100 shadow-sm hover:shadow-xl hover:border-red-100 transition-all duration-300 group flex flex-col h-full">
+                      <div className="w-16 h-16 bg-red-100 text-red-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                        <Train size={32} />
+                      </div>
+                      <h3 className="text-2xl font-bold text-zinc-900 mb-3 group-hover:text-red-600 transition-colors">Grade Crossings</h3>
+                      <p className="text-zinc-600 mb-6 flex-grow">Simple Solutions for Safer Crossings. Expert assessments, compliance evaluation, and whistle cessation consultation.</p>
+                      <button onClick={() => navigateToService('grade-crossings')} className="flex items-center text-red-600 font-semibold group-hover:text-red-700">
+                        Learn more <ChevronRight size={20} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+
+                    {/* Card 2 */}
+                    <div className="bg-zinc-50 rounded-2xl p-8 border border-zinc-100 shadow-sm hover:shadow-xl hover:border-zinc-300 transition-all duration-300 group flex flex-col h-full">
+                      <div className="w-16 h-16 bg-zinc-200 text-zinc-800 rounded-xl flex items-center justify-center mb-6 group-hover:bg-zinc-800 group-hover:text-white transition-colors">
+                        <HardHat size={32} />
+                      </div>
+                      <h3 className="text-2xl font-bold text-zinc-900 mb-3">Project Support</h3>
+                      <p className="text-zinc-600 mb-6 flex-grow">Bridging the Gap in Railway Solutions. Comprehensive project management, constructability reviews, and risk assessments.</p>
+                      <button onClick={() => navigateToService('project-support')} className="flex items-center text-zinc-800 font-semibold group-hover:text-black">
+                        Learn more <ChevronRight size={20} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+
+                    {/* Card 3 */}
+                    <div className="bg-zinc-50 rounded-2xl p-8 border border-zinc-100 shadow-sm hover:shadow-xl hover:border-red-100 transition-all duration-300 group flex flex-col h-full">
+                      <div className="w-16 h-16 bg-red-50 text-red-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                        <BookOpen size={32} />
+                      </div>
+                      <h3 className="text-2xl font-bold text-zinc-900 mb-3 group-hover:text-red-600 transition-colors">Training</h3>
+                      <p className="text-zinc-600 mb-6 flex-grow">Smart Solutions Start with Knowledge. Expert-led training programs on railway safety, compliance, and regulations.</p>
+                      <button onClick={() => navigateToService('training')} className="flex items-center text-red-600 font-semibold group-hover:text-red-700">
+                        Learn more <ChevronRight size={20} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          );
+        }
+
+        function About() {
+          return (
+            <div className="fade-in pb-20">
+              {/* Header */}
+              <div className="bg-black py-20 text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-900 to-red-950/50"></div>
+                <h1 className="text-4xl md:text-5xl font-bold text-white relative z-10">Who We Are</h1>
+                <p className="text-xl text-zinc-300 mt-4 max-w-3xl mx-auto relative z-10 px-4">
+                  We provide complex railway projects with safe, compliant, and forward-thinking solutions.
+                </p>
+              </div>
+
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+                {/* Vision & Mandate */}
+                <div className="grid md:grid-cols-2 gap-8 mb-20">
+                  <div className="bg-white p-10 rounded-2xl shadow-lg border-t-4 border-zinc-800">
+                    <h3 className="text-2xl font-bold text-zinc-900 mb-4 flex items-center gap-3">
+                      <TrendingUp className="text-zinc-800" /> Our Vision
+                    </h3>
+                    <p className="text-zinc-600 text-lg leading-relaxed">
+                      To shape the future of railway transportation through accountability, safety, and knowledge.
+                    </p>
+                  </div>
+                  <div className="bg-white p-10 rounded-2xl shadow-lg border-t-4 border-red-600">
+                    <h3 className="text-2xl font-bold text-zinc-900 mb-4 flex items-center gap-3">
+                      <ShieldCheck className="text-red-600" /> Our Mandate
+                    </h3>
+                    <p className="text-zinc-600 text-lg leading-relaxed">
+                      To set the standard for excellence by delivering safe, compliant, and client-focused project solutions.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bridging the Gap */}
+                <div className="bg-zinc-50 rounded-3xl p-8 md:p-12 mb-20 border border-zinc-200">
+                  <h2 className="text-3xl font-bold text-zinc-900 mb-6">Bridging the Gap: Ironwood Infrastructure</h2>
+                  <div className="space-y-6 text-lg text-zinc-700 leading-relaxed">
+                    <p>
+                      Ironwood Infrastructure was founded in 2022 to bridge a critical gap in the railway industry—delivering safety, compliance, and accountability while fostering stronger collaboration among stakeholders. As railway infrastructure projects grow in scale and complexity, the need for a solutions-driven partner has never been greater. We bring together railways, road authorities, industry leaders, and regulators to create safer, more efficient, and forward-thinking railway networks.
+                    </p>
+                    <p>
+                      With unmatched expertise in regulated railway infrastructure, we have positioned ourselves as a trusted engineering firm committed to excellence. Our deep industry knowledge and proactive approach sets us apart, ensuring that every project meets the highest standards of safety, compliance, and accountability. At Ironwood Infrastructure, we’re not just delivering railway projects—we’re shaping the future of transportation, strengthening connections between communities, and redefining what’s possible.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Team Profile */}
+                <div className="bg-white rounded-3xl shadow-xl overflow-hidden max-w-5xl mx-auto border border-zinc-100">
+                  <div className="grid md:grid-cols-5 h-full">
+                    <div className="md:col-span-2 bg-zinc-200">
+                      <img 
+                        src="rs=w_730,h_730,cg_true.webp" 
+                        alt="Jennifer Benedict" 
+                        className="w-full h-[400px] md:h-full object-cover object-top"
+                      />
+                    </div>
+                    <div className="md:col-span-3 p-8 md:p-12 flex flex-col justify-center bg-zinc-900 text-white">
+                      <h2 className="text-3xl font-bold mb-2">Jennifer Benedict, M.Eng., P.Eng.</h2>
+                      <h3 className="text-red-500 text-xl font-medium mb-6 uppercase tracking-wider">Principal</h3>
+                      <p className="text-zinc-300 text-lg leading-relaxed mb-6">
+                        Jennifer Benedict is a professional engineer with 15+ years of experience. She has an extensive background in risk and project management, inspection and regulatory compliance. Her experience includes delivering over 120 bridge and grade crossing projects, in addition to the implementation of Transport Canada's Grade Crossing Regulations.
+                      </p>
+                      <div className="mt-auto">
+                        <p className="text-white font-medium italic border-l-4 border-red-600 pl-4 py-2">
+                          "From safer crossings to efficient project delivery, our team is dedicated to bridging gaps and creating smarter, more reliable rail networks."
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        function Services({ activeTab, setTab }) {
+          const tabs = [
+            { id: 'grade-crossings', label: 'Grade Crossings', icon: <Train size={20} /> },
+            { id: 'project-support', label: 'Project Support', icon: <HardHat size={20} /> },
+            { id: 'training', label: 'Training & Education', icon: <BookOpen size={20} /> },
+          ];
+
+          return (
+            <div className="fade-in pb-20">
+              {/* Header */}
+              <div className="bg-black py-20 text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-900 to-red-950/50"></div>
+                <h1 className="text-4xl md:text-5xl font-bold text-white relative z-10">Our Services</h1>
+                <p className="text-xl text-zinc-300 mt-4 max-w-3xl mx-auto relative z-10 px-4">
+                  Comprehensive engineering solutions tailored to the complexities of railway infrastructure.
+                </p>
+              </div>
+
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+                {/* Tab Navigation */}
+                <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 md:gap-4 mb-12">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setTab(tab.id)}
+                      className={`flex items-center justify-center w-full sm:w-auto gap-2 px-6 py-4 rounded-xl font-semibold text-lg transition-all ${
+                        activeTab === tab.id 
+                          ? 'bg-red-600 text-white shadow-lg shadow-red-600/30 transform sm:-translate-y-1' 
+                          : 'bg-white text-zinc-600 hover:bg-zinc-100 border border-zinc-200'
+                      }`}
+                    >
+                      {tab.icon} {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Content Area */}
+                <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12 border border-zinc-100 min-h-[600px]">
+                  
+                  {/* GRADE CROSSINGS CONTENT */}
+                  {activeTab === 'grade-crossings' && (
+                    <div className="space-y-12 fade-in">
+                      <div className="text-center max-w-3xl mx-auto mb-12">
+                        <h2 className="text-3xl font-bold text-zinc-900 mb-4">Grade Crossings</h2>
+                        <p className="text-lg text-zinc-600">Simple Solutions for Safer Crossings.</p>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-12">
+                        <div>
+                          <h3 className="text-2xl font-bold text-zinc-900 mb-4 flex items-center gap-3">
+                            <ShieldCheck className="text-red-600" /> Safety Assessments
+                          </h3>
+                          <p className="text-zinc-700 mb-4 leading-relaxed">
+                            Each grade crossing is unique, and so are our assessments. We deliver the highest standard in safety and compliance evaluations, providing practical, tailored recommendations that can be realistically implemented to enhance safety and efficiency. Ironwood's proprietary assessment tool ensures consistency and accuracy of data collected on site, while delivering comprehensive and reliable reports.
+                          </p>
+                          <h4 className="font-semibold text-zinc-900 mb-3 mt-6">Common Reasons for Assessments:</h4>
+                          <ul className="space-y-2">
+                            {[
+                              'Due Dilligence, Safety & Compliance',
+                              'General Hazard Identification & Mitigation',
+                              'Change & Risk Management',
+                              'Post-Incident Review',
+                              'Adjacent Development Impacts',
+                              'Adjacent Road/Driveway Impacts',
+                              'Traffic & Pedestrian Analysis',
+                              'Signage & Warning System Evaluation',
+                              'Data-Driven Decision Making'
+                            ].map((item, i) => (
+                              <li key={i} className="flex items-start gap-2 text-zinc-700">
+                                 <div className="w-1.5 h-1.5 rounded-full bg-red-600 mt-2 flex-shrink-0"></div>
+                                 <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="space-y-12">
+                          <div>
+                            <h3 className="text-2xl font-bold text-zinc-900 mb-4 flex items-center gap-3">
+                              <AlertTriangle className="text-red-600" /> Whistle Cessation Consultation
+                            </h3>
+                            <p className="text-zinc-700 mb-4 leading-relaxed">
+                              Train whistling is a critical safety feature that should not be eliminated without careful consideration. We work closely with stakeholders to assess whistle cessation programs, ensuring regulatory compliance while prioritizing safety and addressing community concerns.
+                            </p>
+                            <p className="text-zinc-700 mb-4 leading-relaxed">
+                              Compliance alone does not ensure safety. That’s why we go beyond minimum regulatory requirements to provide a comprehensive approach.
+                            </p>
+                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                              {['Detailed Safety Review', 'Stakeholder Engagement', 'Impact Assessments', 'Risk Mitigation Strategies', 'Alternative Safety Solutions'].map((item, i) => (
+                                 <li key={i} className="flex items-center gap-2 bg-zinc-50 p-2 rounded border border-zinc-200 text-sm font-medium text-zinc-700">
+                                   <FileCheck size={16} className="text-zinc-900" /> {item}
+                                 </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div>
+                            <h3 className="text-2xl font-bold text-zinc-900 mb-4">Transport Canada Compliance</h3>
+                            <p className="text-zinc-700 mb-4 leading-relaxed">
+                              As experts in grade crossing compliance, we offer services that ensure stakeholders have met their obligations under the regulation. All reports take into consideration multi-stakeholder responsibilities and the complexities of shared railway infrastructure.
+                            </p>
+                            <ul className="space-y-2 border-l-2 border-red-200 pl-4">
+                              <li className="text-zinc-700">Third party crossing design review</li>
+                              <li className="text-zinc-700">Gap analysis and recommendations for proposed crossing work</li>
+                              <li className="text-zinc-700">Compliance letter for project applications</li>
+                              <li className="text-zinc-700">Post-construction compliance letter</li>
+                              <li className="text-zinc-700">Expert witness reviews and documentation</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PROJECT SUPPORT CONTENT */}
+                  {activeTab === 'project-support' && (
+                    <div className="space-y-12 fade-in">
+                       <div className="text-center max-w-3xl mx-auto mb-12">
+                        <h2 className="text-3xl font-bold text-zinc-900 mb-4">Project Support</h2>
+                        <p className="text-lg text-zinc-600">Bridging the Gap in Railway Solutions.</p>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-8">
+                        <ServiceBlock 
+                          title="Project Management" 
+                          content="We provide comprehensive project management for railway infrastructure, ensuring effective stakeholder engagement and expertly navigating the complexities of CTA-regulated projects. From planning and design to construction and commissioning, we proactively identify and mitigate challenges related to railway operations and flagging requirements. Through seamless collaboration and strategic resource management, we enhance efficiency and minimize risks, delivering safe, compliant, and successful project outcomes." 
+                        />
+                        <ServiceBlock 
+                          title="Constructability & Staging Reviews" 
+                          content="Working in an active railway corridor comes with unique challenges, from safety risks to scheduling constraints. Ironwood Infrastructure helps navigate these complexities by developing construction staging plans, feasibility studies, flagging coordination, and track block planning. We evaluate project designs for practicality, safety, and efficiency while identifying potential conflicts, sequencing challenges, and opportunities for cost savings." 
+                        />
+                        <ServiceBlock 
+                          title="Grade Crossing Safety (Construction)" 
+                          content="Grade crossing construction involves complex coordination between railway and road contractors, utility providers, and various stakeholders. Ironwood Infrastructure manages this process by aligning resources for railway track construction, signal installation, and roadwork, while addressing potential conflicts between railway and road operations. We deliver efficient, well-executed grade crossing projects with minimal disruption." 
+                        />
+                        <ServiceBlock 
+                          title="Construction Safety" 
+                          content="Construction site safety on railway projects requires thorough attention to risk management and regulatory compliance. Ironwood Infrastructure specializes in hazard identification, detecting potential risks to ensure safe work environments. We assess worksite conditions, provide risk mitigation strategies, and take corrective action to address safety issues, ensuring alignment with federal and local railway safety standards." 
+                        />
+                        <div className="md:col-span-2">
+                           <ServiceBlock 
+                            title="Risk Assessments" 
+                            content="Ironwood Infrastructure specializes in comprehensive risk assessments for construction, railway operational changes, road modifications, and more. We identify potential risks before construction begins and develop proactive mitigation strategies to reduce those risks. Our assessments consider environmental, operational, and logistical factors, analyzing the potential impacts on safety, schedule, and cost. Through scenario planning and contingency strategies, we help ensure projects stay on track." 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TRAINING CONTENT */}
+                  {activeTab === 'training' && (
+                    <div className="space-y-12 fade-in">
+                      <div className="text-center max-w-3xl mx-auto mb-12">
+                        <h2 className="text-3xl font-bold text-zinc-900 mb-4">Engineering Beyond the Ordinary</h2>
+                        <p className="text-lg text-zinc-600">Smart Solutions Start with Knowledge.</p>
+                      </div>
+
+                      <div className="bg-zinc-50 p-8 rounded-2xl mb-8">
+                        <p className="text-zinc-700 text-lg leading-relaxed text-center">
+                          At Ironwood Infrastructure, we believe safety begins with awareness and knowledge. That’s why we offer expert-led training programs on railway safety, compliance, and regulations. Our complimentary one-hour courses give clients a firsthand look at the expertise and value we provide, while customized workshops and full-day sessions offer deeper insights into railway infrastructure. For those seeking a more comprehensive approach, we also provide portfolio reviews and implementation strategies tailored to specific corporate needs.
+                        </p>
+                      </div>
+
+                      <div className="grid md:grid-cols-3 gap-8">
+                        <div className="bg-white border border-zinc-200 p-6 rounded-xl shadow-sm">
+                          <h3 className="text-xl font-bold text-zinc-900 mb-4 text-red-600 border-b border-zinc-100 pb-2">CTA Regulated Infrastructure</h3>
+                          <ul className="space-y-3">
+                            <li className="flex items-center gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400"/> Who is the CTA?</li>
+                            <li className="flex items-center gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400"/> Understand Board Orders</li>
+                            <li className="flex items-center gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400"/> Interpret Responsibilities</li>
+                            <li className="flex items-center gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400"/> Dispute Resolution</li>
+                          </ul>
+                        </div>
+
+                        <div className="bg-white border border-zinc-200 p-6 rounded-xl shadow-sm">
+                          <h3 className="text-xl font-bold text-zinc-900 mb-4 text-red-600 border-b border-zinc-100 pb-2">Regulatory Compliance</h3>
+                          <ul className="space-y-3">
+                            <li className="flex items-start gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400 mt-1 flex-shrink-0"/> The Railway Safety Act</li>
+                            <li className="flex items-start gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400 mt-1 flex-shrink-0"/> Canada Transportation Act</li>
+                            <li className="flex items-start gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400 mt-1 flex-shrink-0"/> Transport Canada Grade Crossing Regulations</li>
+                            <li className="flex items-start gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400 mt-1 flex-shrink-0"/> Grade Crossing Roles</li>
+                          </ul>
+                        </div>
+
+                        <div className="bg-white border border-zinc-200 p-6 rounded-xl shadow-sm">
+                          <h3 className="text-xl font-bold text-zinc-900 mb-4 text-red-600 border-b border-zinc-100 pb-2">Hidden Risks</h3>
+                          <ul className="space-y-3">
+                            <li className="flex items-center gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400"/> Road/Rail Expansion</li>
+                            <li className="flex items-center gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400"/> Stakeholder Engagement</li>
+                            <li className="flex items-center gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400"/> Impacts from Rapid Growth</li>
+                            <li className="flex items-center gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400"/> Interdependencies</li>
+                            <li className="flex items-center gap-2 text-zinc-700"><ChevronRight size={16} className="text-zinc-400"/> Downstream Impacts</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        function ServiceBlock({ title, content }) {
+          return (
+            <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="text-xl font-bold text-zinc-900 mb-3">{title}</h3>
+              <p className="text-zinc-700 leading-relaxed">{content}</p>
+            </div>
+          );
+        }
+
+        function Insights({ activeArticle, setActiveArticle }) {
+          const articles = [
+            {
+              id: 1,
+              title: "The Oversight of Whistle Cessation at Railway Crossings",
+              date: "September 24, 2024",
+              excerpt: "When Transport Canada introduced new regulations governing railway crossings, a crucial safety aspect was overlooked: the ongoing management of existing crossings with whistle cessation.",
+              content: (
+                <div>
+                  <p className="mb-4">When Transport Canada introduced new regulations governing railway crossings, a crucial safety aspect was overlooked: the ongoing management of existing crossings with whistle cessation.</p>
+                  <p className="mb-4">While the regulation requires all existing crossings, including those with whistle cessation, to be upgraded and comply with the new regulation and standards, a significant oversight remains. There is no specific requirement for existing crossings to undergo regular reviews to assess whether changes in surrounding conditions, traffic volumes, pedestrian/cyclist use, the addition of sidewalks, bike lanes, or other factors have introduced new risks that necessitate risk mitigation or rein of the whistle requirement.</p>
+                  <p className="mb-6">This oversight poses a potential safety hazard, as conditions can change over time, increasing the risk of accidents at crossings where the whistle has been silenced.</p>
+                  
+                  <h3 className="text-2xl font-bold text-zinc-900 mb-4 mt-8">What Can Be Done?</h3>
+                  <ul className="space-y-4 mb-6">
+                    <li className="bg-zinc-50 p-4 rounded-lg border-l-4 border-red-600">
+                      <strong>Regular Reviews:</strong> Periodic reviews of crossings with whistle cessation should be completed to evaluate changes in risk factors and determine if reinstating the whistle is necessary.
+                    </li>
+                    <li className="bg-zinc-50 p-4 rounded-lg border-l-4 border-zinc-800">
+                      <strong>Risk Assessment:</strong> A standardized risk assessment framework should be developed to guide these reviews, considering factors such as changes to road and rail traffic volumes, train speed, sightlines, and the presence of vulnerable crossing users.
+                    </li>
+                    <li className="bg-zinc-50 p-4 rounded-lg border-l-4 border-red-400">
+                      <strong>On-going Stakeholder Engagement:</strong> The road authority, as the proponent of the whistle cessation should engage stakeholders, including the railway and adjacent property owners, to be involved in the review process and ensure that any impacts resulting from stakeholders are incorporated into the review.
+                    </li>
+                  </ul>
+                  <p className="mb-6 font-medium text-lg">By addressing this regulatory gap, we can help ensure the safety of railway crossings and protect crossing users.</p>
+                  <p className="text-red-600 font-semibold">#RailwaySafety #GradeCrossingSafety #TransportCanada #StopTrackTragedies</p>
+                </div>
+              )
+            },
+            {
+              id: 2,
+              title: "A Call to Action for Enhanced Rail Crossing Safety in Canada",
+              date: "September 22, 2024",
+              excerpt: "Let's take this Rail Safety Week as an opportunity to push for more than just compliance – let's push for comprehensive safety at all Canadian railway grade crossings.",
+              content: (
+                <div>
+                  <p className="mb-4">Let's take this Rail Safety Week as an opportunity to push for more than just compliance – let's push for comprehensive safety at all Canadian railway grade crossings.</p>
+                  <p className="mb-6">While the upcoming Transport Canada Grade Crossing Compliance deadline is a positive step, focusing solely on minimum standards just isn’t enough. We need a proactive approach that considers future growth and potential risks.</p>
+                  
+                  <h3 className="text-xl font-bold text-zinc-900 mb-3 mt-8">Here's why regular Grade Crossing Safety Assessments are crucial:</h3>
+                  <ul className="list-disc pl-6 space-y-3 mb-6 text-zinc-700">
+                    <li><strong>Data-driven decisions:</strong> Periodic Grade Crossing Safety assessments provide insights into specific vulnerabilities at each crossing, allowing for targeted safety improvements. Each crossing has unique characteristics, including demographics and adjacent property uses, which may impact safety.</li>
+                    <li><strong>Change Management:</strong> By analyzing potential changes in traffic patterns and infrastructure, we can plan and implement preventive measures before accidents occur. Additional train volumes, higher speeds, wider roads, the addition of sidewalks, bike lane and multi-use paths, all contribute to increased risk.</li>
+                    <li><strong>Optimizing resource allocation:</strong> Resources can be directed towards crossings with the highest risk, leading to a more efficient use of funds.</li>
+                  </ul>
+
+                  <h3 className="text-xl font-bold text-zinc-900 mb-3 mt-8">The human factor also plays a critical role:</h3>
+                  <ul className="list-disc pl-6 space-y-3 mb-8 text-zinc-700">
+                    <li><strong>Public education campaigns:</strong> Raise awareness about safe crossing behaviour, trespassing dangers, and the importance of obeying signals.</li>
+                    <li><strong>Innovative infrastructure:</strong> Implement low cost, simple solutions like road markings, hatching and signage to caution users who may not be familiar with the risks at grade crossings in Canada.</li>
+                  </ul>
+
+                  <h3 className="text-2xl font-bold text-zinc-900 mb-4 bg-red-50 inline-block px-3 py-1 rounded">Let's Learn from the Past for a Safer Tomorrow</h3>
+                  <p className="mb-6 leading-relaxed">
+                    The grim reality of railway safety is underscored by a decade of alarming statistics. According to the Railway Association of Canada, an average of 157 grade crossing accidents occur annually. Operation Lifesaver Canada reports a distressing 190 crossing fatalities over the past 10 years. The Transportation Safety Board’s data reveals that grade crossing accidents account for 16% of all railway accidents, a concerning uptick from previous years. Even more troubling, Operation Lifesaver notes that year-to-date, 35 crossing fatalities and 25 serious injuries have already occurred. These figures do not include the tragic consequences of trespassing accidents. It is clear that by implementing comprehensive risk assessments, enhancing public education, and investing in infrastructure upgrades, we can significantly reduce these preventable tragedies.
+                  </p>
+
+                  <h3 className="text-2xl font-bold text-zinc-900 mb-4 mt-8">The Road Ahead: A Shared Responsibility</h3>
+                  <p className="mb-4">Railway safety demands a collaborative effort from:</p>
+                  <div className="grid md:grid-cols-3 gap-4 mb-8">
+                    <div className="bg-white border border-zinc-200 p-4 rounded-lg shadow-sm">
+                      <h4 className="font-bold text-red-600 mb-2 flex items-center gap-2"><MapPin size={18}/> Road Authorities</h4>
+                      <p className="text-sm">Prioritize crossing safety assessments and work with railways to implement effective solutions. Understand your responsibilities as a road authority and engage experts where needed.</p>
+                    </div>
+                     <div className="bg-white border border-zinc-200 p-4 rounded-lg shadow-sm">
+                      <h4 className="font-bold text-zinc-800 mb-2 flex items-center gap-2"><Train size={18}/> Railway Companies</h4>
+                      <p className="text-sm">Invest in innovative safety features and collaborate with road authorities. Stay engaged with changes around grade crossings and monitor non-reportable safety occurrences.</p>
+                    </div>
+                     <div className="bg-white border border-zinc-200 p-4 rounded-lg shadow-sm">
+                      <h4 className="font-bold text-zinc-600 mb-2 flex items-center gap-2"><Users size={18}/> The Public</h4>
+                      <p className="text-sm">Educate yourselves and others about safe crossing practices and obey all railway signals.</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-black text-white p-6 rounded-xl text-center mb-8 border border-zinc-800">
+                    <p className="text-xl font-medium mb-2">With simple solutions and by working together, we can go beyond the minimum regulations and standards to protect all crossing users.</p>
+                    <p className="text-red-500 font-bold">There’s no safe crossing. But let's work together to reduce the risk of accidents and fatalities.</p>
+                  </div>
+                  
+                  <p className="text-red-600 font-semibold mb-6">#RailSafetyWeek2024 #CrossingSafety #StopTrackTragedies #RailwaySafety</p>
+                  
+                  <div className="text-sm text-zinc-500 bg-zinc-50 p-4 rounded border border-zinc-200">
+                    <strong>Sources:</strong><br/>
+                    Operation Lifesaver: operationlifesaver.ca<br/>
+                    Railway Association of Canada: railcan.ca<br/>
+                    Transportation Safety Board: tsb.gc.ca
+                  </div>
+                </div>
+              )
+            }
+          ];
+
+          return (
+            <div className="fade-in pb-20">
+              <div className="bg-black py-20 text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-900 to-red-950/50"></div>
+                <h1 className="text-4xl md:text-5xl font-bold text-white relative z-10">Insights & News</h1>
+                <p className="text-xl text-zinc-300 mt-4 max-w-3xl mx-auto relative z-10 px-4">
+                  Industry updates, expert opinions, and thought leadership in railway infrastructure.
+                </p>
+              </div>
+
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+                {activeArticle ? (
+                  <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12 border border-zinc-100 fade-in">
+                    <button 
+                      onClick={() => setActiveArticle(null)}
+                      className="text-zinc-500 hover:text-red-600 mb-8 flex items-center font-medium transition-colors"
+                    >
+                      ← Back to Insights
+                    </button>
+                    <h2 className="text-3xl md:text-4xl font-extrabold text-zinc-900 mb-4">{activeArticle.title}</h2>
+                    <p className="text-red-600 font-semibold mb-8 border-b border-zinc-100 pb-6">{activeArticle.date}</p>
+                    <div className="text-zinc-700 leading-relaxed text-lg">
+                      {activeArticle.content}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {articles.map((article) => (
+                      <div 
+                        key={article.id} 
+                        className="bg-white rounded-2xl shadow-md p-8 border border-zinc-100 hover:shadow-xl hover:border-red-200 transition-all cursor-pointer group flex flex-col md:flex-row gap-6 items-start"
+                        onClick={() => setActiveArticle(article)}
+                      >
+                        <div className="flex-grow">
+                          <p className="text-sm font-bold text-red-600 mb-2">{article.date}</p>
+                          <h3 className="text-2xl font-bold text-zinc-900 mb-3 group-hover:text-red-700 transition-colors">{article.title}</h3>
+                          <p className="text-zinc-600 leading-relaxed mb-4">{article.excerpt}</p>
+                          <span className="inline-flex items-center text-red-600 font-semibold group-hover:text-red-800">
+                            Continue Reading <ArrowRight size={16} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        function Media() {
+          return (
+            <div className="fade-in pb-20">
+              <div className="bg-black py-20 text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-900 to-red-950/50"></div>
+                <h1 className="text-4xl md:text-5xl font-bold text-white relative z-10">Media</h1>
+                <p className="text-xl text-zinc-300 mt-4 max-w-3xl mx-auto relative z-10 px-4">
+                  Watch our latest videos and educational content.
+                </p>
+              </div>
+
+              <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 text-center">
+                <div className="bg-white rounded-3xl shadow-xl p-12 border border-zinc-100 max-w-2xl mx-auto">
+                  <div className="w-24 h-24 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Youtube size={48} />
+                  </div>
+                  <h2 className="text-3xl font-bold text-zinc-900 mb-4">Ironwood Infrastructure on YouTube</h2>
+                  <p className="text-lg text-zinc-600 mb-8">
+                    Subscribe to our channel for expert insights, training snippets, and the latest updates on railway infrastructure safety and project management.
+                  </p>
+                  <a 
+                    href="https://www.youtube.com/@IronwoodInfrastructure" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-full font-bold text-lg transition-all shadow-lg hover:shadow-red-600/50"
+                  >
+                    Visit Our Channel <Youtube size={24} />
+                  </a>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        function Contact() {
+          const handleSubmit = (e) => {
+            e.preventDefault();
+            alert("Thank you for your message! We will get back to you shortly.");
+            e.target.reset();
+          };
+
+          return (
+            <div className="fade-in pb-20">
+              <div className="bg-black py-20 text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-900 to-red-950/50"></div>
+                <h1 className="text-4xl md:text-5xl font-bold text-white relative z-10">Contact Us</h1>
+                <p className="text-xl text-zinc-300 mt-4 max-w-3xl mx-auto relative z-10 px-4">
+                  Ready to unlock the potential of your engineering projects? Let's talk.
+                </p>
+              </div>
+
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+                <div className="grid md:grid-cols-2 gap-12 bg-white rounded-3xl shadow-xl overflow-hidden border border-zinc-100">
+                  
+                  {/* Contact Info */}
+                  <div className="bg-zinc-900 p-12 text-white flex flex-col justify-between">
+                    <div>
+                      <h2 className="text-3xl font-bold mb-6">Get in Touch</h2>
+                      <p className="text-zinc-300 text-lg mb-12">
+                        Whether you have a question about our services, need a consultation, or are ready to start a project, our team is here to help.
+                      </p>
+                      
+                      <div className="space-y-8">
+                        <div className="flex items-start gap-4">
+                          <div className="bg-white/10 p-3 rounded-lg"><Mail className="text-red-500" /></div>
+                          <div>
+                            <h4 className="text-lg font-semibold mb-1">Email</h4>
+                            <p className="text-zinc-300">info@ironwoodinfrastructure.com</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-4">
+                          <div className="bg-white/10 p-3 rounded-lg"><MapPin className="text-red-500" /></div>
+                          <div>
+                            <h4 className="text-lg font-semibold mb-1">Office</h4>
+                            <p className="text-zinc-300">Canada-wide Services</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-12 pt-12 border-t border-white/10">
+                       <img src="image_c71aa0.png" alt="Ironwood Infrastructure Logo" className="h-12 object-contain filter brightness-0 invert opacity-80" />
+                    </div>
+                  </div>
+
+                  {/* Contact Form */}
+                  <div className="p-8 md:p-12">
+                    <h3 className="text-2xl font-bold text-zinc-900 mb-6">Send us a Message</h3>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-zinc-700 mb-2">First Name</label>
+                          <input required type="text" className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all" placeholder="John" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-zinc-700 mb-2">Last Name</label>
+                          <input required type="text" className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all" placeholder="Doe" />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-zinc-700 mb-2">Email Address</label>
+                        <input required type="email" className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all" placeholder="john@example.com" />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-zinc-700 mb-2">Subject / Inquiry Type</label>
+                        <select className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all bg-white">
+                          <option>Grade Crossing Assessment</option>
+                          <option>Project Management</option>
+                          <option>Training & Education</option>
+                          <option>General Inquiry</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-zinc-700 mb-2">Message</label>
+                        <textarea required rows="4" className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all resize-none" placeholder="How can we help you?"></textarea>
+                      </div>
+
+                      <button type="submit" className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-lg transition-all shadow-md hover:shadow-lg">
+                        Send Message
+                      </button>
+                    </form>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // Render the React App
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
